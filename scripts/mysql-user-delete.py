@@ -2,12 +2,12 @@
 
 import mysql.connector
 
-username = "ramakrishna"
+username = "rk"
 
 conn = mysql.connector.connect(
     host="training-host.turingiq.ai",
     user="automation",
-    password=""
+    password="@"
 )
 
 cursor = conn.cursor()

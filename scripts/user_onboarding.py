@@ -17,11 +17,11 @@ print("Creating VPN user...")
 subprocess.run(["python3", f"{scripts_path}/vpn-user-creation.py", username, password])
 
 # Step 2: Windows user
-#print("Creating Windows user...")
-#subprocess.run(["python3", "windows.py", username, password])
+print("Creating Windows user...")
+subprocess.run(["python3", f"{scripts_path}/windows-user-creation.py", username, password])
 
 # Step 3: MySQL user
-#print("Creating MySQL user...")
-#subprocess.run(["python3", "mysql.py", username, password])
+print("Creating MySQL user...")
+subprocess.run(["python3", f"{scripts_path}/mysql-user-creation.py", username, password])
 
 print("✅ All provisioning completed successfully")

@@ -2,7 +2,7 @@
 
 import subprocess
 
-username = "ramakrishna"
+username = ""
 
 result = subprocess.run(
     [

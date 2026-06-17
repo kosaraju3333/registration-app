@@ -14,6 +14,7 @@ password = sys.argv[2]
 ps_script = (
     f"$password = ConvertTo-SecureString '{password}' -AsPlainText -Force; "
     f"New-LocalUser -Name '{username}' -Password $password -ErrorAction Stop; "
+    f"Add-LocalGroupMember -Group 'Users' -Member '{username}'; "
     f"Add-LocalGroupMember -Group 'Students' -Member '{username}' -ErrorAction SilentlyContinue; "
     f"Add-LocalGroupMember -Group 'Remote Desktop Users' -Member '{username}'; "
     f"Write-Output 'USER_CREATED_SUCCESS'"

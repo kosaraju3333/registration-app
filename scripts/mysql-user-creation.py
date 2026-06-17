@@ -8,12 +8,13 @@ username = sys.argv[1]
 password = sys.argv[2]
 
 
-#username = "ramakrishna"
+#username = "rk"
+#password = "Rk@123"
 
 conn = mysql.connector.connect(
     host="training-host.turingiq.ai",
     user="automation",
-    password=""
+    password="@"
 )
 
 cursor = conn.cursor()
@@ -34,7 +35,7 @@ conn.commit()
 conn.close()
 
 # Import SQL dump
-with open("mysqlsampledatabase.sql", "r") as sql_file:
+with open("/home/ubuntu/scripts/mysqlsampledatabase.sql", "r") as sql_file:
     subprocess.run(
         [
             "mysql",
