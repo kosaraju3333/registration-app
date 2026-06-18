@@ -5,12 +5,16 @@ import sys
 
 username = sys.argv[1]
 
+linux_script = f"""
+sudo userdel -r {username}
+echo USER_DELETED_SUCCESS
+"""
 
 result = subprocess.run(
     [
         "ssh",
-        "Administrator@training-host.turingiq.ai",
-        f'powershell -ExecutionPolicy Bypass -File "C:\\Scripts\\delete_user.ps1" "{username}"'
+        "ubuntu@vpn-internal.turingiq.ai",
+        linux_script
     ],
     capture_output=True,
     text=True

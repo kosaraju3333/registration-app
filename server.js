@@ -2,6 +2,12 @@ const express = require("express");
 const cors = require("cors");
 const db = require("./db");
 
+const util = require("util");
+const { exec } = require("child_process");
+const nodemailer = require("nodemailer");
+
+const execPromise = util.promisify(exec);
+
 
 const app = express();
 const PORT = 5000;
@@ -9,6 +15,19 @@ const PORT = 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+
+
+// Email transporter
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: "@gmail.com",
+        pass: ""
+    }
+});
+
+
 
 // Health check
 app.get("/", (req, res) => {
@@ -76,90 +95,102 @@ app.get("/requests", (req, res) => {
 });
 
 
-// Approve requests
-const { exec } = require("child_process");
 
 // Approve requests + trigger provisioning
-app.put("/approve/:id", (req, res) => {
+app.put("/approve/:id", async (req, res) => {
 
     const id = req.params.id;
 
-    // Step 1: Get user details
-    db.query(
-        "SELECT full_name, user_name, password, email FROM requests WHERE id=?",
-        [id],
-        (err, result) => {
+    try {
 
-            if (err || result.length === 0) {
-                return res.status(500).json({
-                    message: "User not found or DB error"
-                });
-            }
+        // Get user details
+        db.query(
+            "SELECT full_name, user_name, password, email FROM requests WHERE id=?",
+            [id],
+            async (err, result) => {
 
-            const user = result[0];
+                if (err || result.length === 0) {
+                    return res.status(500).json({
+                        message: "User not found or DB error"
+                    });
+                }
 
-            const username = user.user_name;
-            const password = user.password;
+                const user = result[0];
 
-            // Step 2: Update status first
-            db.query(
-                "UPDATE requests SET status='Approved' WHERE id=?",
-                [id],
-                (err2) => {
+                const username = user.user_name;
+                const password = user.password;
+                const email = user.email;
 
-                    if (err2) {
-                        return res.status(500).json({
-                            message: "Status update failed"
-                        });
-                    }
+                // Update status to Approved
+                db.query(
+                    "UPDATE requests SET status='Approved' WHERE id=?",
+                    [id],
+                    async (err2) => {
 
-                    // Step 3: Trigger script
-                    const cmd = `python3 /home/ubuntu/scripts/user_onboarding.py "${username}" "${password}"`;
-
-                    exec(cmd, (error, stdout, stderr) => {
-
-                        if (error) {
-                            console.error("Script error:", error);
-                            return;
+                        if (err2) {
+                            return res.status(500).json({
+                                message: "Status update failed"
+                            });
                         }
 
-                        console.log("Script output:", stdout);
-                    });
+                        try {
 
-                    res.json({
-                        message: "Approved + Provisioning started"
-                    });
+                            // Run onboarding script and wait for completion
+                            const cmd = `python3 /home/ubuntu/scripts/user_onboarding.py "${username}" "${password}"`;
 
-                }
-            );
-        }
-    );
-});
+                            const { stdout, stderr } = await execPromise(cmd);
 
+                            console.log("Script output:", stdout);
 
-/*app.put("/approve/:id", (req, res) => {
+                            if (stderr) {
+                                console.error("Script stderr:", stderr);
+                            }
 
-    const id = req.params.id;
+                            // Send onboarding email
+                            await transporter.sendMail({
+                                from: "@gmail.com",
+                                to: email,
+                                subject: "Your Training Environment is Ready",
+                                text: "Please find the attached onboarding document.",
+                                attachments: [
+                                    {
+                                        filename: "Turingiq-Training-Onboarding-Doc.pdf",
+                                        path: "/home/ubuntu/Turingiq-Training-Onboarding-Doc.pdf"
+                                    }
+                                ]
+                            });
 
-    db.query(
-        "UPDATE requests SET status='Approved' WHERE id=?",
-        [id],
-        (err, result) => {
+                            console.log("Email sent successfully");
 
-            if (err) {
-                return res.status(500).json({
-                    message: "Database error"
-                });
+                            res.json({
+                                message: "Provisioning completed and onboarding email sent"
+                            });
+
+                        } catch (error) {
+
+                            console.error("Provisioning error:", error);
+
+                            res.status(500).json({
+                                message: "Provisioning or email failed"
+                            });
+                        }
+
+                    }
+                );
+
             }
+        );
 
-            res.json({
-                message: "Request approved"
-            });
+    } catch (err) {
 
-        }
-    );
+        console.error(err);
 
-});*/
+        res.status(500).json({
+            message: "Internal server error"
+        });
+    }
+
+});
 
 
 // Reject requests
@@ -225,6 +256,68 @@ app.post("/login", (req, res) => {
     );
 
 });
+
+
+
+
+// Delete User
+app.put("/delete/:id", (req, res) => {
+
+    const id = req.params.id;
+
+    db.query(
+        "SELECT full_name, user_name, password, email FROM requests WHERE id=?",
+        [id],
+        (err, result) => {
+
+            if (err || result.length === 0) {
+
+                return res.status(500).json({
+                    message: "User not found"
+                });
+
+            }
+
+            const user = result[0];
+
+            const username = user.user_name;
+            const password = user.password;
+            const email = user.email;
+
+
+            const cmd =
+                `python3 /home/ubuntu/scripts/user_deprovisioning.py "${username}"`;
+
+            exec(cmd, (error, stdout, stderr) => {
+
+                if (error) {
+
+                    console.error(error);
+
+                    return res.status(500).json({
+                        message: "Script failed"
+                    });
+
+                }
+
+                db.query(
+                    "UPDATE requests SET status='Deleted' WHERE id=?",
+                    [id]
+                );
+
+                res.json({
+                    message: "Infrastructure deleted successfully"
+                });
+
+            });
+
+        }
+
+    );
+
+});
+
+
 
 
 

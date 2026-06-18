@@ -1,13 +1,15 @@
 #!/usr/bin/python3
 
 import mysql.connector
+import sys
 
-username = "rk"
+username = sys.argv[1]
+
 
 conn = mysql.connector.connect(
     host="training-host.turingiq.ai",
     user="automation",
-    password="@"
+    password="Automation@Training123"
 )
 
 cursor = conn.cursor()
