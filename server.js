@@ -116,7 +116,7 @@ app.put("/approve/:id", async (req, res) => {
                 }
 
                 const user = result[0];
-
+		const fullname = user.full_name
                 const username = user.user_name;
                 const password = user.password;
                 const email = user.email;
@@ -150,8 +150,45 @@ app.put("/approve/:id", async (req, res) => {
                             await transporter.sendMail({
                                 from: "@gmail.com",
                                 to: email,
-                                subject: "Your Training Environment is Ready",
-                                text: "Please find the attached onboarding document.",
+				subject: "Welcome to TuringIQ Training Platform 🚀",
+
+    html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <p> Dear <b>${fullname}</b>, </p>
+
+            <h2>Welcome to TuringIQ Training Platform! 🚀</h2>
+
+            <p>
+                We are excited to have you onboard.
+            </p>
+
+            <p>
+                Your training environment has been successfully provisioned and is ready for use.
+            </p>
+
+            <p>
+                Please find the onboarding document attached to this email. It contains detailed instructions for accessing the resources required for your training.
+            </p>
+
+            <p>
+                If you have any questions or need assistance, please feel free to reach out to the training team.
+            </p>
+
+            <br>
+
+            <p>
+                We wish you a productive and enjoyable learning experience.
+            </p>
+
+            <br>
+
+            <p>
+                Best regards,<br>
+                <b>TuringIQ Team</b>
+            </p>
+
+        </div>
+    `,
                                 attachments: [
                                     {
                                         filename: "Turingiq-Training-Onboarding-Doc.pdf",
@@ -191,6 +228,8 @@ app.put("/approve/:id", async (req, res) => {
     }
 
 });
+
+
 
 
 // Reject requests
@@ -287,8 +326,12 @@ app.put("/delete/:id", (req, res) => {
 
             const cmd =
                 `python3 /home/ubuntu/scripts/user_deprovisioning.py "${username}"`;
+	   
+
 
             exec(cmd, (error, stdout, stderr) => {
+		console.log("Script output:", stdout);
+
 
                 if (error) {
 
