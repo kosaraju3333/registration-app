@@ -1,2 +1,2 @@
-# registration-app
-This is Registration-app
+# Training-api
+This is Training-api
